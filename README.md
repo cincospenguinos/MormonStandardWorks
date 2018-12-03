@@ -18,8 +18,13 @@ There are two components to this repository: the website and the analysis. The w
 
 ## TODO
 
-- [ ] Gather list of books
-- [ ] Collect full texts in `txt` format
+- [ ] Extract text of KJV Bible
+- [ ] Extract text from BoM
+- [ ] Extract text from D&C
+- [ ] Extract text from PoGP
+- [ ] Extract text from The Late War
+- [ ] Extract text from View of the Hebrews
+- [ ] Extract text from The First Book of Napoleon
 - [ ] Perform analysis of each text
 - [ ] Export data into CSV format
 - [ ] Design various visualizations
