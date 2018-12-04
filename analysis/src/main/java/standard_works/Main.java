@@ -12,21 +12,24 @@ import java.util.regex.Pattern;
  */
 public class Main {
 
-    private static final String[] MORMON_TEXTS = {};
-    private static final String[] NON_MORMON_TEXTS = { "kjv.txt" /*, "the_late_war.txt", "view_of_the_hebrews.txt" */ };
+    private static final String[] MORMON_TEXTS = { "the_book_of_mormon.txt", "pearl_of_great_price.txt", "d&c.txt" };
+    private static final String[] NON_MORMON_TEXTS = { "kjv.txt" , "the_late_war.txt" };
 
     public static void main(String[] args) {
         List<Text> texts = new ArrayList();
+
+        for (int i = 0; i < MORMON_TEXTS.length; i++) {
+            File f = new File("texts/mormon_texts/" + MORMON_TEXTS[i]);
+            Text t = new Text(MORMON_TEXTS[i], extractFullText(f), TextType.MORMON);
+            t.extractNGrams();
+            texts.add(t);
+        }
 
         for(int i = 0; i < NON_MORMON_TEXTS.length; i++) {
             File f = new File("texts/non_mormon_texts/" + NON_MORMON_TEXTS[i]);
             Text t = new Text(NON_MORMON_TEXTS[i], extractFullText(f), TextType.NON_MORMON);
             t.extractNGrams();
-
-            for (NGram n : t.getNGramCollection().getNGramSet(2)) {
-                System.out.println(n + "\t" + t.getNGramCollection().frequencyOf(n));
-            }
-//            texts.add(t);
+            texts.add(t);
         }
     }
 
@@ -38,7 +41,7 @@ public class Main {
      */
     private static String extractFullText(File f) {
         StringBuilder builder = new StringBuilder();
-        Pattern p = Pattern.compile("\\d+:\\d+");
+        Pattern p = Pattern.compile("(\\d+:\\d+|\")");
 
         try {
             Scanner s = new Scanner(f);
@@ -49,7 +52,7 @@ public class Main {
                 builder.append(line + "\n");
             }
         } catch (FileNotFoundException e) {
-            throw new RuntimeException("Could not find file!");
+            throw new RuntimeException("Could not find file! " + f.toString());
         }
 
         return builder.toString();

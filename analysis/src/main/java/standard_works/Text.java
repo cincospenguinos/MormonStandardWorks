@@ -69,6 +69,8 @@ public class Text {
     /**
      * Helper method. Removes non-words from the collection of strings provided.
      *
+     * TODO: This could filter too much out. Consider removing.
+     *
      * @param strings to filter
      * @return Array of words
      */
@@ -101,5 +103,9 @@ public class Text {
         } catch (FileNotFoundException e) {
             throw new RuntimeException("Cannot find american english dictionary file. You must not be on linux.");
         }
+    }
+
+    public String getTitle() {
+        return title;
     }
 }
