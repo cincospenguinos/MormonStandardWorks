@@ -42,9 +42,9 @@ public class Main {
 
         for (Text t : texts) {
             if (t.getType() == TextType.MORMON) {
-                createFrequencyFile(t, "output/mormon/" + t.getTitle());
+                createFrequencyFile(t, "dataset/mormon/" + t.getTitle());
             } else {
-                createFrequencyFile(t, "output/non_mormon/" + t.getTitle());
+                createFrequencyFile(t, "dataset/non_mormon/" + t.getTitle());
             }
         }
     }
@@ -65,7 +65,8 @@ public class Main {
             while(s.hasNextLine()) {
                 String line = s.nextLine();
                 line = p.matcher(line).replaceAll("");
-                builder.append(line + "\n");
+                builder.append(line);
+                builder.append('\n');
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException("Could not find file! " + f.toString());
