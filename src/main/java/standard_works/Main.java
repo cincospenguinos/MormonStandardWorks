@@ -76,8 +76,8 @@ public class Main {
     }
 
     private static void setupOutput() {
-        File mormonOutput = new File("output/mormon");
-        File nonMormonOutput = new File("output/non_mormon");
+        File mormonOutput = new File("dataset/mormon");
+        File nonMormonOutput = new File("dataset/non_mormon");
 
         if (!mormonOutput.exists())
             mormonOutput.mkdirs();
