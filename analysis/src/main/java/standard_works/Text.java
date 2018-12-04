@@ -8,10 +8,16 @@ import java.io.File;
 public class Text {
 
     private String title;
+    private String fullText;
     private TextType type;
 
-    public Text(String _title, File _file, TextType _type) {
+    public Text(String _title, String _fullText, TextType _type) {
         title = _title;
         type = _type;
+        fullText = _fullText;
+    }
+
+    public void extractNGrams() {
+
     }
 }
