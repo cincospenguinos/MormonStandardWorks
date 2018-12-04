@@ -27,6 +27,26 @@ public class NGram {
         System.arraycopy(_words, 0, words, 0, words.length);
     }
 
+    /**
+     * Returns size of this NGram.
+     *
+     * @return int
+     */
+    public int size() {
+        return words.length;
+    }
+
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+
+        for (int i = 0; i < words.length; i++) {
+            builder.append(words[i]);
+            builder.append(' ');
+        }
+
+        return builder.toString().trim();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o instanceof NGram) {
@@ -46,13 +66,9 @@ public class NGram {
         return false;
     }
 
-    /**
-     * Returns size of this NGram.
-     *
-     * @return int
-     */
-    public int size() {
-        return words.length;
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(words);
     }
 
     /**

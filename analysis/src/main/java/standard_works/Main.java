@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 public class Main {
 
     private static final String[] MORMON_TEXTS = {};
-    private static final String[] NON_MORMON_TEXTS = { "kjv.txt" /*, "the_late_war.txt" */ };
+    private static final String[] NON_MORMON_TEXTS = { "kjv.txt" /*, "the_late_war.txt", "view_of_the_hebrews.txt" */ };
 
     public static void main(String[] args) {
         List<Text> texts = new ArrayList();
@@ -21,8 +21,12 @@ public class Main {
         for(int i = 0; i < NON_MORMON_TEXTS.length; i++) {
             File f = new File("texts/non_mormon_texts/" + NON_MORMON_TEXTS[i]);
             Text t = new Text(NON_MORMON_TEXTS[i], extractFullText(f), TextType.NON_MORMON);
+            t.extractNGrams();
 
-            texts.add(t);
+            for (NGram n : t.getNGramCollection().getNGramSet(2)) {
+                System.out.println(n + "\t" + t.getNGramCollection().frequencyOf(n));
+            }
+//            texts.add(t);
         }
     }
 
