@@ -4,3 +4,5 @@ _site
 analysis/.idea/
 analysis/target/
 analysis/output/
+.idea/
+target/
