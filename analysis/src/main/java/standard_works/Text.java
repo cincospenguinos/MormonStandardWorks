@@ -108,4 +108,8 @@ public class Text {
     public String getTitle() {
         return title;
     }
+
+    public TextType getType() {
+        return type;
+    }
 }

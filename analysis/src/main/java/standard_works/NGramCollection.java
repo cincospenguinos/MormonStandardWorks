@@ -56,4 +56,16 @@ public class NGramCollection {
             frequencies.put(nGram, 1);
         }
     }
+
+    public String nGramToCSV() {
+        throw new RuntimeException("Implement this");
+    }
+
+    public String frequencyToCSV() {
+        throw new RuntimeException("Implement this");
+    }
+
+    public Set<Map.Entry<NGram, Integer>> getFrequencies() {
+        return frequencies.entrySet();
+    }
 }

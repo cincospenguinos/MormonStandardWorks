@@ -1,9 +1,15 @@
 package standard_works;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -12,24 +18,34 @@ import java.util.regex.Pattern;
  */
 public class Main {
 
-    private static final String[] MORMON_TEXTS = { "the_book_of_mormon.txt", "pearl_of_great_price.txt", "d&c.txt" };
-    private static final String[] NON_MORMON_TEXTS = { "kjv.txt" , "the_late_war.txt" };
+    private static final String[] MORMON_TEXTS = { "the_book_of_mormon", "pearl_of_great_price", "d&c" };
+    private static final String[] NON_MORMON_TEXTS = { "kjv" , "the_late_war" };
 
     public static void main(String[] args) {
         List<Text> texts = new ArrayList();
 
         for (int i = 0; i < MORMON_TEXTS.length; i++) {
-            File f = new File("texts/mormon_texts/" + MORMON_TEXTS[i]);
+            File f = new File("texts/mormon_texts/" + MORMON_TEXTS[i] + ".txt");
             Text t = new Text(MORMON_TEXTS[i], extractFullText(f), TextType.MORMON);
             t.extractNGrams();
             texts.add(t);
         }
 
         for(int i = 0; i < NON_MORMON_TEXTS.length; i++) {
-            File f = new File("texts/non_mormon_texts/" + NON_MORMON_TEXTS[i]);
+            File f = new File("texts/non_mormon_texts/" + NON_MORMON_TEXTS[i] + ".txt");
             Text t = new Text(NON_MORMON_TEXTS[i], extractFullText(f), TextType.NON_MORMON);
             t.extractNGrams();
             texts.add(t);
+        }
+
+        setupOutput();
+
+        for (Text t : texts) {
+            if (t.getType() == TextType.MORMON) {
+                createFrequencyFile(t, "output/mormon/" + t.getTitle());
+            } else {
+                createFrequencyFile(t, "output/non_mormon/" + t.getTitle());
+            }
         }
     }
 
@@ -56,5 +72,30 @@ public class Main {
         }
 
         return builder.toString();
+    }
+
+    private static void setupOutput() {
+        File mormonOutput = new File("output/mormon");
+        File nonMormonOutput = new File("output/non_mormon");
+
+        if (!mormonOutput.exists())
+            mormonOutput.mkdirs();
+
+        if (!nonMormonOutput.exists())
+            nonMormonOutput.mkdirs();
+    }
+
+    private static void createFrequencyFile(Text text, String filename) {
+        try (CSVPrinter printer = new CSVPrinter(new FileWriter(filename + "_freq.csv"),CSVFormat.DEFAULT)) {
+            printer.printRecord("string", "n", "frequency");
+
+            NGramCollection collection = text.getNGramCollection();
+            for (Map.Entry<NGram, Integer> e : collection.getFrequencies()) {
+                printer.printRecord(e.getKey(), e.getKey().size(), e.getValue());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 }
