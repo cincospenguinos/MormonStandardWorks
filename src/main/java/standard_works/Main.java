@@ -7,56 +7,118 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
  * Main class where the magic happens.
+ *
  */
 public class Main {
 
-    private static final String[] MORMON_TEXTS = { "the_book_of_mormon", "pearl_of_great_price", "d&c" };
-    private static final String[] NON_MORMON_TEXTS = { "kjv" , "the_late_war" };
+    private static final String TEXTS_DIRECTORY = "texts/";
+    private static final String OUTPUT_DIRECTORY = "dataset/";
 
     public static void main(String[] args) {
-        List<Text> texts = new ArrayList();
-
-        for (int i = 0; i < MORMON_TEXTS.length; i++) {
-            File f = new File("texts/mormon_texts/" + MORMON_TEXTS[i] + ".txt");
-            Text t = new Text(MORMON_TEXTS[i], extractFullText(f), TextType.MORMON);
-            t.extractNGrams();
-            texts.add(t);
-        }
-
-        for(int i = 0; i < NON_MORMON_TEXTS.length; i++) {
-            File f = new File("texts/non_mormon_texts/" + NON_MORMON_TEXTS[i] + ".txt");
-            Text t = new Text(NON_MORMON_TEXTS[i], extractFullText(f), TextType.NON_MORMON);
-            t.extractNGrams();
-            texts.add(t);
-        }
-
         setupOutput();
 
-        for (Text t : texts) {
-            if (t.getType() == TextType.MORMON) {
-                createFrequencyFile(t, "dataset/mormon/" + t.getTitle());
+        List<Text> mormonTexts = new ArrayList<>();
+        List<Text> nonMormonTexts = new ArrayList<>();
+        List<Text> allTexts = new ArrayList<>();
+
+        for (String filename : Objects.requireNonNull(new File(TEXTS_DIRECTORY).list())) {
+            Text t = extractFullText(filename);
+
+            if (t.getType().equals(TextType.MORMON)) {
+                mormonTexts.add(t);
             } else {
-                createFrequencyFile(t, "dataset/non_mormon/" + t.getTitle());
+                nonMormonTexts.add(t);
+            }
+
+            allTexts.add(t);
+        }
+
+        // Start processing nGrams
+        ExecutorService pool = Executors.newFixedThreadPool(7);
+
+        for (Text t : allTexts) {
+            pool.submit(t::extractNGrams);
+        }
+
+        // While that's going, let's create an overview file
+        System.out.println("Setup the books overview file...");
+        try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(OUTPUT_DIRECTORY + "books_overview.csv"), CSVFormat.DEFAULT)) {
+            csvPrinter.printRecord("textName", "filename", "isMormon");
+
+            for (Text t : allTexts) {
+                csvPrinter.printRecord(t.getTitle(), t.getFileName(), t.getType() == TextType.MORMON);
+            }
+
+            csvPrinter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        // We'll wait at most one minute until everything is processed
+        try {
+            System.out.println("Waiting on nGram processing...");
+            pool.awaitTermination(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        System.out.println("Processing intersection files...");
+        for (Text mormonText : mormonTexts) {
+            for (Text nonMormonText : nonMormonTexts) {
+                pool.submit(() -> {
+                    String newFileName = mormonText.getFileName() + "_" + nonMormonText.getFileName() + ".csv";
+
+                    try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(OUTPUT_DIRECTORY + newFileName), CSVFormat.DEFAULT)) {
+                        csvPrinter.printRecord("nGram", "size", "mormonFreq", "nonMormonFreq");
+
+                        Map<NGram, Integer[]> intersection = NGramCollection.frequencyIntersection(mormonText.getNGramCollection(), nonMormonText.getNGramCollection());
+
+                        for(Map.Entry<NGram, Integer[]> e : intersection.entrySet()) {
+                            csvPrinter.printRecord(e.getKey(), e.getKey().size(), e.getValue()[0], e.getValue()[1]);
+                        }
+
+                        csvPrinter.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
+                });
             }
         }
+
+        try {
+            pool.awaitTermination(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        pool.shutdown();
     }
 
     /**
      * Helper method. Returns the full text of the file provided.
      *
-     * @param f - File to extract from
-     * @return String full text
+     * @param filename - name of file to extract from
+     * @return String array of the text's name and the full text
      */
-    private static String extractFullText(File f) {
+    private static Text extractFullText(String filename) {
+        File f = new File(TEXTS_DIRECTORY + filename);
+
+        String textName = null;
+        TextType textType = null;
         StringBuilder builder = new StringBuilder();
+
         Pattern p = Pattern.compile("(\\d+:\\d+|\")");
 
         try {
@@ -64,26 +126,29 @@ public class Main {
 
             while(s.hasNextLine()) {
                 String line = s.nextLine();
-                line = p.matcher(line).replaceAll("");
-                builder.append(line);
-                builder.append('\n');
+
+                if (textName == null) {
+                    String[] firstLine = line.trim().split(":");
+                    textName = firstLine[0].trim();
+                    textType = TextType.valueOf(firstLine[1]);
+                } else {
+                    line = p.matcher(line).replaceAll("");
+                    builder.append(line);
+                    builder.append('\n');
+                }
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException("Could not find file! " + f.toString());
         }
 
-        return builder.toString();
+        return new Text(textName, builder.toString(), textType);
     }
 
     private static void setupOutput() {
-        File mormonOutput = new File("dataset/mormon");
-        File nonMormonOutput = new File("dataset/non_mormon");
+        File outputDir = new File(OUTPUT_DIRECTORY);
 
-        if (!mormonOutput.exists())
-            mormonOutput.mkdirs();
-
-        if (!nonMormonOutput.exists())
-            nonMormonOutput.mkdirs();
+        if (!outputDir.exists())
+            outputDir.mkdir();
     }
 
     private static void createFrequencyFile(Text text, String filename) {

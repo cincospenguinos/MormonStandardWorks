@@ -57,6 +57,22 @@ public class NGramCollection {
         }
     }
 
+    public boolean containsNGram(NGram nGram) {
+        return frequencies.containsKey(nGram);
+    }
+
+    public static Map<NGram, Integer[]> frequencyIntersection(NGramCollection collection1, NGramCollection collection2) {
+        Map<NGram, Integer[]> intersection = new HashMap<>();
+
+        for (NGram nGram : collection1.frequencies.keySet()) {
+            if (collection2.containsNGram(nGram)) {
+                intersection.put(nGram, new Integer[] { collection1.frequencyOf(nGram), collection2.frequencyOf(nGram) });
+            }
+        }
+
+        return intersection;
+    }
+
     public String nGramToCSV() {
         throw new RuntimeException("Implement this");
     }
